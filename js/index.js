@@ -19,7 +19,7 @@ let getMovie = () =>{
                     <div>
                         <h2>${data.Title}</h2>
                         <div class="rating">
-                            <img src="asset/star-icon.svg" alt="star">
+                            <img src="assets/star-icon.svg" alt="star">
                             <h4>${data.imdbRating}</h4>
                         </div>
                         <div class="details">
@@ -27,8 +27,8 @@ let getMovie = () =>{
                             <span>${data.Year}</span>
                             <span>${data.Runtime}</span>
                         </div>
-                        <div class"genre">
-                            <div>${data.Genre.split(",").join("<div></div>")}</div>
+                        <div class="genre">
+                            <div>${data.Genre.split(",").join("</div><div>")}</div>
                         </div>
                         <div class="content">
                             <h3>Plot:</h3>
@@ -46,7 +46,7 @@ let getMovie = () =>{
                 result.innerHTML = `<h3 class="msg">${data}</h3`
             }
         }).catch(() =>{
-            result.innerHTML = `<h3 class="msg">il n' y a eu une erreur</h3`
+            result.innerHTML = `<h3 class="msg">il y a eu une erreur</h3`
 
         })
             

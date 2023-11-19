@@ -40,6 +40,22 @@ h4{
     display: inline-block;
 }
 
+.genre {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .genre div {
+    border: 1px solid #a0a0a0;
+    font-size: 0.75em;
+    padding: 0.4em 1.6em;
+    border-radius: 0.4em;
+    font-weight: 300;
+}
+
+  
+ 
 .details{
     font-weight: 300;
     display: flex;
@@ -50,20 +66,9 @@ h4{
     margin: 0.6em 0;
 }
 
-.genre{
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
 
-.genre div{
-    border: 1px solid #a0a0a0;
-    padding: 0.4em 0.6em;
-    border-radius: 0.4em ;
-    font-weight: 300;
-    font-size: 0.15 em;
 
-}
+
 .content{
     display: flex;
     align-items: center;
@@ -76,7 +81,7 @@ h4{
 }
 
 .content p{
-    font-weight: 500;
+    font-weight: 300;
     font-size: 0.9em;
     line-height: 1.8em;
     text-align: justify;
