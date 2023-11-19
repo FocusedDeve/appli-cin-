@@ -39,6 +39,16 @@ let getMovie = () =>{
                             <h3>Cast:</h3>
                             <p>${data.Actors}</p>
                         </div>
+                        <div class="voir-film">
+                        <!-- lien sur les sites -->
+                            <a href="https://www.imdb.com/" target="_blank">Streamer sur iMDb TV</a>                        
+                            <a href="https://www.netflix.com/" target="_blank">Regarder sur Netflix</a>                        
+                            <a href="https://t.me/fimsserieszone" target="_blank">Telecharger sur Telegram</a>
+                            <a href=" https://www.rakuten.tv/fr/gardens/free" target="_blank">Voir sur rakutenTV</a>
+                            <a href="https://animationdigitalnetwork.fr/vi..." target="_blank">Voir les animés</a>
+                            <a href="https://wedotv.com/" target="_blank">Voir Documentaire</a>
+                           
+                            </div>
                     </div>
                     <img src=${data.Poster} class="poster">
                 </div>
@@ -49,7 +59,7 @@ let getMovie = () =>{
                 result.innerHTML = `<h3 class="msg">${data.Error}</h3`
             }
         }).catch(() =>{
-            result.innerHTML = `<h3 class="msg">il y a eu une erreur</h3`
+            result.innerHTML = `<h3 class="msg"> Erreur de recharchement verifiez votre connection internet</h3`
 
         })
             

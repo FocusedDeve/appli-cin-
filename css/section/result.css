@@ -45,15 +45,13 @@ h4{
     justify-content: center;
     gap: 10px;
   }
-
-  .genre div {
+.genre div{
     border: 1px solid #a0a0a0;
-    font-size: 0.75em;
-    padding: 0.4em 1.6em;
     border-radius: 0.4em;
-    font-weight: 300;
+    font-size: 1.1em;
+    font-weight: 100;
+    padding: 0.4em 0.6em;
 }
-
   
  
 .details{
@@ -62,7 +60,7 @@ h4{
     font-size: 0.94em;
     gap: 1em;
     justify-content: center;
-    color: #eb1313 ;
+    color: #eb0808 ;
     margin: 0.6em 0;
 }
 
@@ -85,10 +83,32 @@ h4{
     font-size: 0.9em;
     line-height: 1.8em;
     text-align: justify;
-    color: #f11313ee;
+    color: #dc0d0d;
     max-width: 300px;
 }
 
 .msg{
     text-align: center;
+}
+
+.voir-film {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+.voir-film a{
+    border-radius: 0.4em;
+    font-size: 0.8em;
+    font-weight: 100;
+    padding: 0.4em 0.6em;
+    color: var(--textColor);
+}
+a:hover{
+    filter: blur(1px);
+    opacity: 1;
+    border: 1px solid rgba(248, 244, 10, 0.854);
+    color: red;
+    font-size: 16px
+
+
 }
