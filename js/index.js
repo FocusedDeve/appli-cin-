@@ -7,9 +7,12 @@ let getMovie = () =>{
     let url = `http://www.omdbapi.com/?t=${movieName}&apikey=${key}`;
 
     //si le champ input est vide
-    if(movieName.lenght <= 0) {
-        result.innerHTML = `<h3 class="msg">Merci d'entrer un nom de film<h3>`;
-    }
+
+    
+    if(movieName === undefined || movieName === null || movieName === "") {
+        result.innerHTML = `<h3 class="msg">Merci d'entrer un nom de film</h3>`;
+      }
+      
     else{
         fetch(url).then((response) => response.json()).then
         ((data) => {
@@ -43,7 +46,7 @@ let getMovie = () =>{
             } 
             // si le film n'existe pas dans la base de donnée
             else{
-                result.innerHTML = `<h3 class="msg">${data}</h3`
+                result.innerHTML = `<h3 class="msg">${data.Error}</h3`
             }
         }).catch(() =>{
             result.innerHTML = `<h3 class="msg">il y a eu une erreur</h3`
@@ -55,3 +58,21 @@ let getMovie = () =>{
 
 searchBtn.addEventListener("click", getMovie);
 window.addEventListener("load", getMovie);
+
+
+const themeBtn = document.getElementById("theme-btn");
+let darkMode = true;
+
+themeBtn.addEventListener("click", () => {
+    if (darkMode) {
+        document.documentElement.style.setProperty('--bgColor', 'var(--bgColor-light)');
+        document.documentElement.style.setProperty('--textColor', 'var(--textColor-light)');
+        themeBtn.textContent = "Mode sombre";
+        darkMode = false;
+    } else {
+        document.documentElement.style.setProperty('--bgColor', 'var(--bgColor-dark)');
+        document.documentElement.style.setProperty('--textColor', 'var(--textColor-dark)');
+        themeBtn.textContent = "Mode clair";
+        darkMode = true;
+    }
+});
