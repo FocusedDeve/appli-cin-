@@ -1,0 +1,39 @@
+footer {
+    border-top: 1px solid #f0f0f0;
+    padding: 50px 30px;
+    color: #777;
+    font-size: .8em;
+    margin-top: 30px;
+  }
+  
+  footer #footer-links {
+    float: right;
+    text-align: right;
+  }
+  
+  footer #footer-links p {
+    margin-top: 0;
+    padding-right: 5px;
+  }
+  
+  footer #footer-links a {
+    color: silver;
+    text-decoration: none;
+  }
+  footer #footer-links a:hover {
+    color: grey;
+  }
+
+  .container {
+    width: 800px;
+    margin: 0 auto;
+  }
+
+  .logocine {
+    width: 30px;
+    display: inline-block;
+  }
+  
+  .logocine img {
+    width: 100%;
+  }

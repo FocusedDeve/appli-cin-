@@ -3,7 +3,7 @@
 
 @import url(section/header.css);
 @import url(section/result.css);
-    
+@import url(section/footer.css);   
 
 :root{
     --poppins:"Poppins", sans serif;
@@ -29,3 +29,10 @@ body{
     height: 100vh;
     background-color: var(--bgColor);
 }
+
+@media only screen and (max-width: 600px) {
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  }

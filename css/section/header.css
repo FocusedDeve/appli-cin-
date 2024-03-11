@@ -8,8 +8,8 @@ nav{
 }
 
 nav .logo img{
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
     object-fit: contain;
 }
 nav .search {
@@ -29,7 +29,10 @@ nav .search button{
     background-color: var(--bgColor);
 
 }
-
+button:hover{
+    filter:blur(1px);
+    color: red;
+}
 .theme #theme-btn {
     background-color: #FFFFFF; 
     color: #000000; 
@@ -45,3 +48,4 @@ nav .search button{
 .theme #theme-btn:hover {
     background-color: #E7E7E7; 
 }
+
