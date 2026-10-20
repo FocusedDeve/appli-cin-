@@ -11,11 +11,9 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Le build prérend l'accueil et appelle donc TMDB : le token est fourni en secret
-# de build (jamais écrit dans une couche de l'image).
-ENV TMDB_BASE_URL=https://api.themoviedb.org/3 \
-    TMDB_IMAGE_BASE_URL=https://image.tmdb.org/t/p
-RUN --mount=type=secret,id=tmdb_token,env=TMDB_ACCESS_TOKEN pnpm build
+# Aucune clé n'est nécessaire au build : l'accueil est statique et les appels
+# TMDB / Gemini ont lieu à l'exécution.
+RUN pnpm build
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -23,11 +21,13 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     TMDB_BASE_URL=https://api.themoviedb.org/3 \
-    TMDB_IMAGE_BASE_URL=https://image.tmdb.org/t/p
+    TMDB_IMAGE_BASE_URL=https://image.tmdb.org/t/p \
+    AI_MODEL=gemini-3.5-flash-lite
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
 USER node
 EXPOSE 3000
-# TMDB_ACCESS_TOKEN est à fournir à l'exécution (docker run -e / --env-file).
+# À fournir à l'exécution (docker run -e / --env-file) : TMDB_ACCESS_TOKEN,
+# GOOGLE_GENERATIVE_AI_API_KEY et, en option, AI_MODEL.
 CMD ["node", "server.js"]
