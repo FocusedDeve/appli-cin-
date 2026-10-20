@@ -10,6 +10,7 @@ export type Movie = {
   backdrop_path: string | null;
   release_date: string;
   vote_average: number;
+  vote_count?: number;
   genre_ids?: number[];
 };
 
@@ -126,4 +127,64 @@ export async function getMovieVideos(id: number): Promise<MovieVideo[]> {
     }));
   }
   return results.filter((v) => v.site === "YouTube");
+}
+
+export type WatchProvider = {
+  id: number;
+  name: string;
+  logo: string | null;
+  /** free : gratuit, ads : gratuit avec publicité, flatrate : abonnement. */
+  category: "free" | "ads" | "flatrate";
+};
+
+export type WatchProviders = {
+  /** Page JustWatch du film pour la région (TMDB ne fournit pas de lien direct par plateforme). */
+  link: string | null;
+  providers: WatchProvider[];
+};
+
+type RawProvider = { provider_id: number; provider_name: string; logo_path: string | null };
+type RawRegion = { link?: string } & Partial<Record<"free" | "ads" | "flatrate", RawProvider[]>>;
+
+/** Plateformes de streaming (hors location/achat) d'un film pour une région. */
+export async function getWatchProviders(id: number, region = "FR"): Promise<WatchProviders> {
+  "use cache";
+  cacheLife("hours");
+  const data = await tmdbFetch<{ results: Record<string, RawRegion> }>(
+    `/movie/${id}/watch/providers`,
+  );
+  const entry = data.results[region];
+  if (!entry) return { link: null, providers: [] };
+
+  const providers = (["free", "ads", "flatrate"] as const).flatMap((category) =>
+    (entry[category] ?? []).map((p) => ({
+      id: p.provider_id,
+      name: p.provider_name,
+      logo: tmdbImageUrl(p.logo_path, "w92"),
+      category,
+    })),
+  );
+  return { link: entry.link ?? null, providers };
+}
+
+/**
+ * Meilleur résultat TMDB pour une liste de titres candidats (français, original…),
+ * ou null. Les fiches quasi vides (aucun vote) sont ignorées : ce sont presque
+ * toujours de faux positifs de la recherche par titre.
+ */
+export async function findMovie(titles: string[], year?: number): Promise<Movie | null> {
+  for (const title of titles) {
+    const q = title.trim();
+    if (!q) continue;
+    const params: Record<string, string> = { query: q, include_adult: "false" };
+    // L'année donnée par le LLM peut être décalée d'un an : on retente sans filtre.
+    for (const withYear of year ? [true, false] : [false]) {
+      if (withYear) params.primary_release_year = String(year);
+      else delete params.primary_release_year;
+      const { results } = await tmdbFetch<Paginated<Movie>>("/search/movie", params);
+      const hit = results.find((m) => (m.vote_count ?? 0) >= 10);
+      if (hit) return hit;
+    }
+  }
+  return null;
 }
