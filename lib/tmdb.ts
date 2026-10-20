@@ -40,6 +40,15 @@ export type MovieVideo = {
 
 type Paginated<T> = { results: T[] };
 
+export class TmdbError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 async function tmdbFetch<T>(
   path: string,
   params: Record<string, string> = {},
@@ -60,7 +69,7 @@ async function tmdbFetch<T>(
     headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
   });
   if (!res.ok) {
-    throw new Error(`TMDB ${res.status} ${res.statusText} (${path})`);
+    throw new TmdbError(res.status, `TMDB ${res.status} ${res.statusText} (${path})`);
   }
   return res.json() as Promise<T>;
 }

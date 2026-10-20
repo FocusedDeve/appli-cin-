@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Star } from "lucide-react";
 import { FadeIn } from "@/components/fade-in";
 import { tmdbImageUrl, type Movie } from "@/lib/tmdb";
@@ -42,6 +43,12 @@ export function Hero({ movie }: { movie: Movie }) {
               {movie.overview}
             </p>
           )}
+          <Link
+            href={`/movie/${movie.id}`}
+            className="mt-6 inline-flex items-center rounded-xl bg-blue-700 px-5 py-3 font-medium transition hover:bg-blue-600"
+          >
+            Voir la fiche
+          </Link>
         </FadeIn>
       </div>
     </section>
