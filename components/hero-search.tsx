@@ -7,6 +7,7 @@ import { generateRecommendations, type Recommendation } from "@/app/actions";
 import { RecommendationCard } from "@/components/recommendation-card";
 
 const MAX_LENGTH = 500;
+const PAGE_SIZE = 5;
 
 const EXAMPLES = [
   "Un huis clos psychologique avec une fin inattendue",
@@ -29,6 +30,7 @@ type State =
 
 export function HeroSearch() {
   const [prompt, setPrompt] = useState("");
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [state, setState] = useState<State>({ status: "idle" });
   const [, startTransition] = useTransition();
   const loading = state.status === "loading";
@@ -36,6 +38,7 @@ export function HeroSearch() {
   function submit(text: string) {
     const value = text.trim();
     if (value.length < 5 || loading) return;
+    setVisible(PAGE_SIZE);
     setState({ status: "loading" });
     startTransition(async () => {
       try {
@@ -165,16 +168,27 @@ export function HeroSearch() {
 
           {state.status === "success" && (
             <motion.ul key="success" className="space-y-5 pb-24">
-              {state.recommendations.map((r, i) => (
+              {state.recommendations.slice(0, visible).map((r, i) => (
                 <motion.li
                   key={r.id}
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: i * 0.12, ease: "easeOut" }}
+                  transition={{ duration: 0.5, delay: (i % PAGE_SIZE) * 0.12, ease: "easeOut" }}
                 >
                   <RecommendationCard recommendation={r} />
                 </motion.li>
               ))}
+              {visible < state.recommendations.length && (
+                <li className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                    className="rounded-full border border-blue-500/40 px-6 py-2.5 font-medium text-blue-200 transition hover:bg-blue-900/30"
+                  >
+                    Voir plus
+                  </button>
+                </li>
+              )}
             </motion.ul>
           )}
         </AnimatePresence>
