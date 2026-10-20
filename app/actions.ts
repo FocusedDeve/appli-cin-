@@ -8,7 +8,7 @@ import {
   getWatchProviders,
   tmdbImageUrl,
   type MediaType,
-  type WatchProvider,
+  type WatchProviders,
 } from "@/lib/tmdb";
 
 const MAX_PROMPT_LENGTH = 500;
@@ -39,12 +39,8 @@ export type Recommendation = {
   overview: string;
   rating: number;
   poster: string | null;
-  /** Plateformes gratuites (free + ads) en France. */
-  freeProviders: WatchProvider[];
-  /** Plateformes avec abonnement (Netflix, Prime Video…) en France. */
-  subscriptionProviders: WatchProvider[];
-  /** Page JustWatch du film. */
-  watchLink: string | null;
+  /** Offres en France (gratuit, abonnement, location, achat) ou pays de disponibilité. */
+  watch: WatchProviders;
 };
 
 export type RecommendationsResult =
@@ -86,7 +82,7 @@ export async function generateRecommendations(
           const type: MediaType = film.type === "serie" ? "tv" : "movie";
           const movie = await findMedia(type, [film.titre_original, film.titre], film.annee);
           if (!movie) return null;
-          const { link, providers } = await getWatchProviders(movie.id, type);
+          const watch = await getWatchProviders(movie.id, type);
           return {
             id: movie.id,
             type,
@@ -96,9 +92,7 @@ export async function generateRecommendations(
             overview: movie.overview,
             rating: movie.vote_average,
             poster: tmdbImageUrl(movie.poster_path, "w500"),
-            freeProviders: providers.filter((p) => p.category !== "flatrate"),
-            subscriptionProviders: providers.filter((p) => p.category === "flatrate"),
-            watchLink: link,
+            watch,
           };
         } catch (e) {
           console.error("[generateRecommendations] enrichissement", film.titre, e);

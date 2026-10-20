@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { providerUrl } from "@/lib/providers";
 
 const LANGUAGE = "fr-FR";
 
@@ -117,12 +118,12 @@ export async function getMovieDetails(id: number): Promise<MovieDetails> {
 }
 
 /** Vidéos YouTube, en français d'abord puis en anglais si aucune VF n'existe. */
-export async function getMovieVideos(id: number): Promise<MovieVideo[]> {
+export async function getMovieVideos(id: number, type: MediaType = "movie"): Promise<MovieVideo[]> {
   "use cache";
   cacheLife("hours");
-  let { results } = await tmdbFetch<Paginated<MovieVideo>>(`/movie/${id}/videos`);
+  let { results } = await tmdbFetch<Paginated<MovieVideo>>(`/${type}/${id}/videos`);
   if (results.length === 0) {
-    ({ results } = await tmdbFetch<Paginated<MovieVideo>>(`/movie/${id}/videos`, {
+    ({ results } = await tmdbFetch<Paginated<MovieVideo>>(`/${type}/${id}/videos`, {
       language: "en-US",
     }));
   }
@@ -135,20 +136,28 @@ export type WatchProvider = {
   id: number;
   name: string;
   logo: string | null;
-  /** free : gratuit, ads : gratuit avec publicité, flatrate : abonnement. */
-  category: "free" | "ads" | "flatrate";
+  /** Site officiel de la plateforme, si connu. */
+  url: string | null;
+  /** free : gratuit, ads : gratuit avec publicité, flatrate : abonnement, rent : location, buy : achat. */
+  category: "free" | "ads" | "flatrate" | "rent" | "buy";
 };
 
 export type WatchProviders = {
-  /** Page JustWatch du film pour la région (TMDB ne fournit pas de lien direct par plateforme). */
+  /** Page JustWatch du titre pour la région. */
   link: string | null;
   providers: WatchProvider[];
+  /** Codes pays (ISO 3166-1) où le titre est en streaming, renseignés si aucune offre en région. */
+  otherRegions: string[];
 };
 
 type RawProvider = { provider_id: number; provider_name: string; logo_path: string | null };
-type RawRegion = { link?: string } & Partial<Record<"free" | "ads" | "flatrate", RawProvider[]>>;
+type RawRegion = { link?: string } & Partial<
+  Record<"free" | "ads" | "flatrate" | "rent" | "buy", RawProvider[]>
+>;
 
-/** Plateformes de streaming (hors location/achat) d'un film pour une région. */
+const CATEGORIES = ["free", "ads", "flatrate", "rent", "buy"] as const;
+
+/** Plateformes (streaming, location, achat) d'un film ou d'une série pour une région. */
 export async function getWatchProviders(
   id: number,
   type: MediaType = "movie",
@@ -160,17 +169,26 @@ export async function getWatchProviders(
     `/${type}/${id}/watch/providers`,
   );
   const entry = data.results[region];
-  if (!entry) return { link: null, providers: [] };
-
-  const providers = (["free", "ads", "flatrate"] as const).flatMap((category) =>
-    (entry[category] ?? []).map((p) => ({
+  const providers = CATEGORIES.flatMap((category) =>
+    (entry?.[category] ?? []).map((p) => ({
       id: p.provider_id,
       name: p.provider_name,
       logo: tmdbImageUrl(p.logo_path, "w92"),
+      url: providerUrl(p.provider_id),
       category,
     })),
   );
-  return { link: entry.link ?? null, providers };
+
+  // Rien en France : on indique les pays où le titre est au moins en streaming.
+  const otherRegions =
+    providers.length > 0
+      ? []
+      : Object.entries(data.results)
+          .filter(([code, r]) => code !== region && (r.free || r.ads || r.flatrate))
+          .map(([code]) => code)
+          .slice(0, 8);
+
+  return { link: entry?.link ?? null, providers, otherRegions };
 }
 
 type TvResult = Omit<Movie, "title" | "release_date"> & { name: string; first_air_date: string };
@@ -208,4 +226,30 @@ export async function findMedia(
     }
   }
   return null;
+}
+
+type TvDetailsRaw = Omit<MovieDetails, "title" | "release_date" | "runtime"> & {
+  name: string;
+  first_air_date: string;
+  episode_run_time: number[];
+  number_of_seasons: number;
+  number_of_episodes: number;
+};
+
+export type SeriesDetails = MovieDetails & { seasons: number; episodes: number };
+
+/** Détails d'une série, ramenés à la forme MovieDetails (title / release_date / runtime). */
+export async function getTvDetails(id: number): Promise<SeriesDetails> {
+  "use cache";
+  cacheLife("hours");
+  const raw = await tmdbFetch<TvDetailsRaw>(`/tv/${id}`, { append_to_response: "credits" });
+  const { name, first_air_date, episode_run_time, number_of_seasons, number_of_episodes, ...rest } = raw;
+  return {
+    ...rest,
+    title: name,
+    release_date: first_air_date,
+    runtime: episode_run_time?.[0] ?? null,
+    seasons: number_of_seasons,
+    episodes: number_of_episodes,
+  };
 }
