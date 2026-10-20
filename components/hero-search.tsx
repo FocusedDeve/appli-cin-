@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, type FormEvent, type KeyboardEvent 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { generateRecommendations, type Recommendation } from "@/app/actions";
+import { RecommendationCard } from "@/components/recommendation-card";
 
 const MAX_LENGTH = 500;
 
@@ -163,20 +164,16 @@ export function HeroSearch() {
           )}
 
           {state.status === "success" && (
-            <motion.ul
-              key="success"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-3 pb-24"
-            >
-              {/* Provisoire : remplacé par les RecommendationCard en phase 4. */}
-              {state.recommendations.map((r) => (
-                <li key={r.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="font-display text-lg font-semibold">
-                    {r.title} <span className="text-gray-500">({r.year})</span>
-                  </p>
-                  <p className="mt-1 text-sm text-gray-400">{r.reason}</p>
-                </li>
+            <motion.ul key="success" className="space-y-5 pb-24">
+              {state.recommendations.map((r, i) => (
+                <motion.li
+                  key={r.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: i * 0.12, ease: "easeOut" }}
+                >
+                  <RecommendationCard recommendation={r} />
+                </motion.li>
               ))}
             </motion.ul>
           )}
