@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Star } from "lucide-react";
 import { FadeIn } from "@/components/fade-in";
 import { TrailerButton } from "@/components/trailer-button";
+import { getRegion } from "@/lib/region";
 import { WhereToWatch } from "@/components/where-to-watch";
 import {
   getMovieDetails,
@@ -42,7 +43,7 @@ export async function MediaContent({
     [movie, videos, watch] = await Promise.all([
       type === "tv" ? getTvDetails(id) : getMovieDetails(id),
       getMovieVideos(id, type),
-      getWatchProviders(id, type),
+      getWatchProviders(id, type, await getRegion()),
     ]);
   } catch (e) {
     if (e instanceof TmdbError && e.status === 404) notFound();

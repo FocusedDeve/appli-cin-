@@ -1,12 +1,10 @@
 import Image from "next/image";
 import { ExternalLink, Globe } from "lucide-react";
+import { regionName } from "@/lib/countries";
 import { groupProviders } from "@/lib/providers";
 import type { WatchProvider, WatchProviders } from "@/lib/tmdb";
 
-function regionNames(codes: string[]): string {
-  const names = new Intl.DisplayNames(["fr"], { type: "region" });
-  return codes.map((c) => names.of(c) ?? c).join(", ");
-}
+const regionNames = (codes: string[]) => codes.map(regionName).join(", ");
 
 export function ProviderLogos({ providers, label }: { providers: WatchProvider[]; label: string }) {
   return (
@@ -49,7 +47,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 /**
- * Où regarder un titre en France : gratuit, abonnement, location/achat, et à défaut
+ * Où regarder un titre dans la région choisie : gratuit, abonnement, location/achat, et à défaut
  * les pays où il est disponible. `hideFree` laisse l'appelant gérer la ligne gratuite.
  */
 export function WhereToWatch({
@@ -84,8 +82,8 @@ export function WhereToWatch({
         <p className="flex items-start gap-2 text-sm text-gray-400">
           <Globe className="mt-0.5 size-4 shrink-0" />
           {data.otherRegions.length > 0
-            ? `Pas d'offre en France. Disponible en streaming : ${regionNames(data.otherRegions)}.`
-            : "Aucune offre légale référencée en France pour le moment."}
+            ? `Pas d'offre en ${regionName(data.region)}. Disponible en streaming : ${regionNames(data.otherRegions)}.`
+            : `Aucune offre légale référencée en ${regionName(data.region)} pour le moment.`}
         </p>
       )}
 

@@ -143,10 +143,12 @@ export type WatchProvider = {
 };
 
 export type WatchProviders = {
+  /** Région des offres (ISO 3166-1). */
+  region: string;
   /** Page JustWatch du titre pour la région. */
   link: string | null;
   providers: WatchProvider[];
-  /** Codes pays (ISO 3166-1) où le titre est en streaming, renseignés si aucune offre en région. */
+  /** Autres pays où le titre est en streaming, renseignés si aucune offre dans la région. */
   otherRegions: string[];
 };
 
@@ -160,8 +162,8 @@ const CATEGORIES = ["free", "ads", "flatrate", "rent", "buy"] as const;
 /** Plateformes (streaming, location, achat) d'un film ou d'une série pour une région. */
 export async function getWatchProviders(
   id: number,
-  type: MediaType = "movie",
-  region = "FR",
+  type: MediaType,
+  region: string,
 ): Promise<WatchProviders> {
   "use cache";
   cacheLife("hours");
@@ -179,7 +181,7 @@ export async function getWatchProviders(
     })),
   );
 
-  // Rien en France : on indique les pays où le titre est au moins en streaming.
+  // Rien dans la région : on indique les pays où le titre est au moins en streaming.
   const otherRegions =
     providers.length > 0
       ? []
@@ -188,7 +190,7 @@ export async function getWatchProviders(
           .map(([code]) => code)
           .slice(0, 8);
 
-  return { link: entry?.link ?? null, providers, otherRegions };
+  return { region, link: entry?.link ?? null, providers, otherRegions };
 }
 
 type TvResult = Omit<Movie, "title" | "release_date"> & { name: string; first_air_date: string };

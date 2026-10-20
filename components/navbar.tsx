@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clapperboard } from "lucide-react";
+import { RegionSelect } from "@/components/region-select";
 import { SearchLauncher } from "@/components/search-launcher";
 
 export function Navbar() {
@@ -9,7 +10,10 @@ export function Navbar() {
         <Clapperboard className="size-6 text-blue-600" />
         Cinehub
       </Link>
-      <SearchLauncher />
+      <div className="flex items-center gap-3">
+        <RegionSelect />
+        <SearchLauncher />
+      </div>
     </header>
   );
 }

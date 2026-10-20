@@ -3,6 +3,7 @@
 import { generateText, Output } from "ai";
 import { google, type GoogleLanguageModelOptions } from "@ai-sdk/google";
 import { z } from "zod";
+import { getRegion } from "@/lib/region";
 import {
   findMedia,
   getWatchProviders,
@@ -39,7 +40,7 @@ export type Recommendation = {
   overview: string;
   rating: number;
   poster: string | null;
-  /** Offres en France (gratuit, abonnement, location, achat) ou pays de disponibilité. */
+  /** Offres dans la région de l'utilisateur (gratuit, abonnement, location, achat) ou pays de disponibilité. */
   watch: WatchProviders;
 };
 
@@ -58,6 +59,7 @@ export async function generateRecommendations(
     return { ok: false, error: `Votre description est trop longue (${MAX_PROMPT_LENGTH} caractères max).` };
   }
 
+  const region = await getRegion();
   try {
     const { output } = await generateText({
       model: google(process.env.AI_MODEL ?? "gemini-3.5-flash-lite"),
@@ -82,7 +84,7 @@ export async function generateRecommendations(
           const type: MediaType = film.type === "serie" ? "tv" : "movie";
           const movie = await findMedia(type, [film.titre_original, film.titre], film.annee);
           if (!movie) return null;
-          const watch = await getWatchProviders(movie.id, type);
+          const watch = await getWatchProviders(movie.id, type, region);
           return {
             id: movie.id,
             type,

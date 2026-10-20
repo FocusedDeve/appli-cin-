@@ -1,18 +1,18 @@
 import type { WatchProvider } from "@/lib/tmdb";
 
 /**
- * Site officiel des principales plateformes (ids TMDB, région FR). TMDB ne fournit
+ * Site officiel des principales plateformes (ids TMDB). TMDB ne fournit
  * qu'un lien JustWatch par film : ceci permet de rendre chaque logo cliquable.
  */
 const PROVIDER_URLS: Record<number, string> = {
-  8: "https://www.netflix.com/fr/",
-  1796: "https://www.netflix.com/fr/",
+  8: "https://www.netflix.com/",
+  1796: "https://www.netflix.com/",
   119: "https://www.primevideo.com/",
   10: "https://www.primevideo.com/",
-  350: "https://tv.apple.com/fr",
-  2: "https://tv.apple.com/fr",
-  337: "https://www.disneyplus.com/fr-fr",
-  283: "https://www.crunchyroll.com/fr",
+  350: "https://tv.apple.com/",
+  2: "https://tv.apple.com/",
+  337: "https://www.disneyplus.com/",
+  283: "https://www.crunchyroll.com/",
   381: "https://www.canalplus.com/",
   58: "https://www.canalvod.com/",
   234: "https://www.arte.tv/fr/",
@@ -20,13 +20,24 @@ const PROVIDER_URLS: Record<number, string> = {
   61: "https://video-a-la-demande.orange.fr/",
   192: "https://www.youtube.com/",
   35: "https://rakuten.tv/fr",
-  11: "https://mubi.com/fr",
+  11: "https://mubi.com/",
   415: "https://animationdigitalnetwork.com/",
   147: "https://www.m6plus.fr/",
   1754: "https://www.tf1.fr/",
   538: "https://watch.plex.tv/fr",
-  300: "https://pluto.tv/fr",
-  531: "https://www.paramountplus.com/fr/",
+  300: "https://pluto.tv/",
+  531: "https://www.paramountplus.com/",
+  15: "https://www.hulu.com/",
+  1899: "https://www.max.com/",
+  386: "https://www.peacocktv.com/",
+  73: "https://tubitv.com/",
+  613: "https://www.amazon.com/freevee",
+  207: "https://therokuchannel.roku.com/",
+  38: "https://www.bbc.co.uk/iplayer",
+  41: "https://www.itv.com/",
+  103: "https://www.channel4.com/",
+  21: "https://www.stan.com.au/",
+  230: "https://www.crave.ca/",
   1967: "https://molotov.tv/",
 };
 
