@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, Play, Star } from "lucide-react";
 import type { Recommendation } from "@/app/actions";
+import type { WatchProvider } from "@/lib/tmdb";
 
 export function RecommendationCard({ recommendation: r }: { recommendation: Recommendation }) {
   const isSeries = r.type === "tv";
@@ -10,9 +11,10 @@ export function RecommendationCard({ recommendation: r }: { recommendation: Reco
   const detailsProps = isSeries ? { target: "_blank", rel: "noopener noreferrer" } : {};
   const hasFree = r.freeProviders.length > 0;
   // Un même service peut être listé en "free" et en "ads" : on ne l'affiche qu'une fois.
-  const providers = r.freeProviders.filter(
-    (p, i, all) => all.findIndex((other) => other.id === p.id) === i,
-  );
+  const unique = (list: WatchProvider[]) =>
+    list.filter((p, i, all) => all.findIndex((other) => other.id === p.id) === i);
+  const free = unique(r.freeProviders);
+  const subscription = unique(r.subscriptionProviders);
 
   return (
     <article className="flex flex-col gap-5 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-colors hover:border-blue-500/40 sm:flex-row sm:p-5">
@@ -66,7 +68,7 @@ export function RecommendationCard({ recommendation: r }: { recommendation: Reco
           <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-gray-400">{r.overview}</p>
         )}
 
-        <div className="mt-auto pt-4">
+        <div className="mt-auto space-y-3 pt-4">
           {hasFree ? (
             <div className="flex flex-wrap items-center gap-4">
               <a
@@ -79,29 +81,36 @@ export function RecommendationCard({ recommendation: r }: { recommendation: Reco
                 Regarder gratuitement
                 <ExternalLink className="size-3.5 opacity-70" />
               </a>
-              <ul className="flex items-center gap-2" aria-label="Plateformes gratuites">
-                {providers.map((p) => (
-                  <li key={p.id} title={p.category === "ads" ? `${p.name} (avec publicité)` : p.name}>
-                    {p.logo ? (
-                      <Image
-                        src={p.logo}
-                        alt={p.name}
-                        width={36}
-                        height={36}
-                        className="size-9 rounded-lg"
-                      />
-                    ) : (
-                      <span className="text-xs text-gray-400">{p.name}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <ProviderLogos providers={free} label="Plateformes gratuites" />
             </div>
           ) : (
             <p className="text-sm italic text-gray-500">Non disponible gratuitement pour le moment</p>
           )}
+
+          {subscription.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm text-gray-400">Avec abonnement :</span>
+              <ProviderLogos providers={subscription} label="Plateformes avec abonnement" />
+            </div>
+          )}
         </div>
       </div>
     </article>
+  );
+}
+
+function ProviderLogos({ providers, label }: { providers: WatchProvider[]; label: string }) {
+  return (
+    <ul className="flex flex-wrap items-center gap-2" aria-label={label}>
+      {providers.map((p) => (
+        <li key={p.id} title={p.category === "ads" ? `${p.name} (avec publicité)` : p.name}>
+          {p.logo ? (
+            <Image src={p.logo} alt={p.name} width={36} height={36} className="size-9 rounded-lg" />
+          ) : (
+            <span className="text-xs text-gray-400">{p.name}</span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }

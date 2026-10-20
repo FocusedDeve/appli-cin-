@@ -41,6 +41,8 @@ export type Recommendation = {
   poster: string | null;
   /** Plateformes gratuites (free + ads) en France. */
   freeProviders: WatchProvider[];
+  /** Plateformes avec abonnement (Netflix, Prime Video…) en France. */
+  subscriptionProviders: WatchProvider[];
   /** Page JustWatch du film. */
   watchLink: string | null;
 };
@@ -95,6 +97,7 @@ export async function generateRecommendations(
             rating: movie.vote_average,
             poster: tmdbImageUrl(movie.poster_path, "w500"),
             freeProviders: providers.filter((p) => p.category !== "flatrate"),
+            subscriptionProviders: providers.filter((p) => p.category === "flatrate"),
             watchLink: link,
           };
         } catch (e) {
