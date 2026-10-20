@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Mic, Sparkles, Square } from "lucide-react";
 import { generateRecommendations, type Recommendation } from "@/app/actions";
 import { RecommendationCard } from "@/components/recommendation-card";
+import { useSpeechRecognition } from "@/components/use-speech-recognition";
 
 const MAX_LENGTH = 500;
 const PAGE_SIZE = 5;
@@ -30,6 +31,11 @@ type State =
 
 export function HeroSearch() {
   const [prompt, setPrompt] = useState("");
+  // Texte déjà saisi au moment où la dictée démarre : la dictée s'y ajoute.
+  const baseRef = useRef("");
+  const voice = useSpeechRecognition("fr-FR", (transcript) =>
+    setPrompt(`${baseRef.current} ${transcript}`.trim().slice(0, MAX_LENGTH)),
+  );
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [state, setState] = useState<State>({ status: "idle" });
   const [, startTransition] = useTransition();
@@ -38,6 +44,7 @@ export function HeroSearch() {
   function submit(text: string) {
     const value = text.trim();
     if (value.length < 5 || loading) return;
+    voice.stop();
     setVisible(PAGE_SIZE);
     setState({ status: "loading" });
     startTransition(async () => {
@@ -117,15 +124,56 @@ export function HeroSearch() {
           <span className="text-xs text-gray-500">
             {prompt.length}/{MAX_LENGTH}
           </span>
-          <button
-            type="submit"
-            disabled={loading || prompt.trim().length < 5}
-            aria-label="Lancer la recherche"
-            className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-gray-500"
-          >
-            <ArrowUp className="size-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {voice.supported && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (voice.listening) {
+                    voice.stop();
+                  } else {
+                    baseRef.current = prompt;
+                    voice.start();
+                  }
+                }}
+                disabled={loading}
+                aria-label={voice.listening ? "Arrêter la dictée" : "Dicter votre demande"}
+                aria-pressed={voice.listening}
+                className={`relative flex size-10 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  voice.listening
+                    ? "bg-red-600 text-white"
+                    : "bg-white/10 text-gray-300 hover:bg-white/20"
+                }`}
+              >
+                {voice.listening && (
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-red-500/60"
+                    animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
+                  />
+                )}
+                {voice.listening ? <Square className="relative size-4 fill-current" /> : <Mic className="size-5" />}
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading || prompt.trim().length < 5}
+              aria-label="Lancer la recherche"
+              className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-gray-500"
+            >
+              <ArrowUp className="size-5" />
+            </button>
+          </div>
         </div>
+        {(voice.listening || voice.error) && (
+          <p
+            role={voice.error ? "alert" : "status"}
+            className={`px-3 pt-1 text-xs ${voice.error ? "text-red-400" : "text-red-300"}`}
+          >
+            {voice.error ?? "Je vous écoute… Cliquez sur le carré pour arrêter."}
+          </p>
+        )}
       </motion.form>
 
       <div className="mt-6 min-h-24 w-full">
