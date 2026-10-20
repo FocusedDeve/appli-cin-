@@ -11,13 +11,13 @@ const MAX_LENGTH = 500;
 const EXAMPLES = [
   "Un huis clos psychologique avec une fin inattendue",
   "Un film feel-good pour un dimanche pluvieux",
-  "Un thriller coréen sur la vengeance",
+  "Une série policière nordique sombre et addictive",
 ];
 
 const LOADING_MESSAGES = [
   "Analyse de vos goûts en cours…",
   "Exploration de la cinémathèque…",
-  "Sélection des films qui vous correspondent…",
+  "Sélection des films et séries qui vous correspondent…",
   "Recherche des plateformes gratuites…",
 ];
 
@@ -89,7 +89,7 @@ export function HeroSearch() {
         </h1>
         {!compact && (
           <p className="mx-auto mt-4 max-w-xl text-gray-400">
-            Décrivez un scénario, une ambiance, un acteur. Le sommelier vous propose une sélection sur-mesure.
+            Décrivez un scénario, une ambiance, un acteur. Films, séries ou animes : le sommelier vous propose une sélection sur-mesure.
           </p>
         )}
       </motion.div>
@@ -107,7 +107,7 @@ export function HeroSearch() {
           rows={3}
           disabled={loading}
           placeholder="Ex : un huis clos psychologique avec une fin inattendue…"
-          aria-label="Décrivez le film que vous cherchez"
+          aria-label="Décrivez le film ou la série que vous cherchez"
           className="w-full resize-none bg-transparent px-3 py-2 text-lg text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-60"
         />
         <div className="flex items-center justify-between px-3 pb-1">
