@@ -78,6 +78,14 @@ export async function getTrendingMovies(): Promise<Movie[]> {
   return data.results;
 }
 
+/** Table id → nom, pour afficher les genres des listes (qui ne contiennent que des genre_ids). */
+export async function getGenreMap(): Promise<Record<number, string>> {
+  "use cache";
+  cacheLife("days");
+  const data = await tmdbFetch<{ genres: Genre[] }>("/genre/movie/list");
+  return Object.fromEntries(data.genres.map((g) => [g.id, g.name]));
+}
+
 /** Non mis en cache : dépend de la saisie utilisateur (le debounce est côté client). */
 export async function searchMovies(query: string): Promise<Movie[]> {
   const q = query.trim();
