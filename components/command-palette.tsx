@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Search } from "lucide-react";
+import { useLang, useT } from "@/lib/use-lang";
 
 type Result = { id: number; title: string; year: string; poster: string | null };
 
@@ -18,6 +19,8 @@ export function CommandPalette({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const lang = useLang();
+  const t = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +38,7 @@ export function CommandPalette({
       setLoading(true);
       setError(false);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&lang=${lang}`, {
           signal: controller.signal,
         });
         if (!res.ok) throw new Error();
@@ -53,7 +56,7 @@ export function CommandPalette({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [open, searchable, trimmed]);
+  }, [open, searchable, trimmed, lang]);
 
   const close = () => {
     setQuery("");
@@ -87,7 +90,7 @@ export function CommandPalette({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[15vh] backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/75 px-4 pt-[15vh]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -96,24 +99,24 @@ export function CommandPalette({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Recherche de films"
-            className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-gray-900/80 shadow-2xl backdrop-blur-xl"
-            initial={{ opacity: 0, scale: 0.96, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -8 }}
+            aria-label={t.paletteAria}
+            className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-surface shadow-lg shadow-black/50"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onKeyDown={onKeyDown}
           >
-            <div className="flex items-center gap-3 border-b border-white/10 px-4">
-              <Search className="size-5 text-gray-400" />
+            <div className="flex items-center gap-3 border-b border-line px-4">
+              <Search className="size-5 text-ink-2" />
               <input
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher un film…"
-                className="h-14 flex-1 bg-transparent text-base text-gray-100 placeholder:text-gray-500 focus:outline-none"
+                placeholder={t.palettePlaceholder}
+                className="h-14 flex-1 bg-transparent text-base text-ink placeholder:text-ink-2 focus:outline-none"
               />
-              {loading && <Loader2 className="size-4 animate-spin text-blue-500" />}
+              {loading && <Loader2 className="size-4 animate-spin text-ice" />}
             </div>
 
             <ul className="max-h-[50vh] overflow-y-auto p-2">
@@ -124,34 +127,34 @@ export function CommandPalette({
                     onClick={() => go(r.id)}
                     onMouseEnter={() => setActive(i)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition ${
-                      i === active ? "bg-blue-700/30" : ""
+                      i === active ? "bg-elevated" : ""
                     }`}
                   >
-                    <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-md bg-gray-800">
+                    <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-md bg-elevated">
                       {r.poster && (
                         <Image src={r.poster} alt="" fill sizes="40px" className="object-cover" />
                       )}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{r.title}</p>
-                      {r.year && <p className="text-sm text-gray-400">{r.year}</p>}
+                      {r.year && <p className="text-sm text-ink-2">{r.year}</p>}
                     </div>
                   </button>
                 </li>
               ))}
               {searchable && !loading && !error && results.length === 0 && (
-                <li className="p-4 text-center text-sm text-gray-400">
-                  Aucun résultat pour « {trimmed} »
+                <li className="p-4 text-center text-sm text-ink-2">
+                  {t.paletteNoResult(trimmed)}
                 </li>
               )}
               {error && (
                 <li className="p-4 text-center text-sm text-red-400">
-                  La recherche est indisponible, réessayez.
+                  {t.paletteError}
                 </li>
               )}
               {!searchable && (
-                <li className="p-4 text-center text-sm text-gray-500">
-                  Tapez au moins 2 caractères
+                <li className="p-4 text-center text-sm text-ink-2">
+                  {t.paletteHint}
                 </li>
               )}
             </ul>

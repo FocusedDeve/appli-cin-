@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Instrument_Serif } from "next/font/google";
+import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
+import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,25 +10,31 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Cinehub",
-  description: "Catalogue de films : tendances, recherche, synopsis, casting et bandes-annonces.",
+  title: "Popcorn & Chill",
+  description: "Noraly, your AI movie sommelier: tell her what you feel like watching and get movies, series and anime picked for you.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="fr"
-      className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      lang="en"
+      className={`${inter.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-gray-950 text-gray-100">
-        <Navbar />
-        {children}
+      <body className="min-h-full flex flex-col bg-canvas text-ink">
+        <ToastProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </ToastProvider>
+
       </body>
     </html>
   );
