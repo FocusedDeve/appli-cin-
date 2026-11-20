@@ -1,4 +1,4 @@
-/** Pays proposés dans le sélecteur de région (codes ISO 3166-1, ceux gérés par TMDB). */
+/** Pays gérés (codes ISO 3166-1). La région est déduite du cookie ou de la langue du navigateur. */
 export const COUNTRIES = [
   "FR", "BE", "CH", "CA", "LU", "MC", "MA", "DZ", "TN", "SN", "CI", "CM", "CD", "MG", "HT",
   "US", "GB", "IE", "DE", "AT", "ES", "IT", "PT", "NL", "SE", "NO", "DK", "FI", "PL", "RO",
@@ -18,6 +18,6 @@ export function regionFromLocale(locale: string | undefined | null): string | nu
   return isRegion(code) ? code : null;
 }
 
-export function regionName(code: string): string {
-  return new Intl.DisplayNames(["fr"], { type: "region" }).of(code) ?? code;
+export function regionName(code: string, lang: string = "fr"): string {
+  return new Intl.DisplayNames([lang], { type: "region" }).of(code) ?? code;
 }

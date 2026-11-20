@@ -1,7 +1,10 @@
 import { cacheLife } from "next/cache";
 import { providerUrl } from "@/lib/providers";
 
-const LANGUAGE = "fr-FR";
+import { DEFAULT_LANG, tmdbLocale, type Lang } from "@/lib/i18n";
+
+/** Langue par défaut des appels TMDB ; chaque appel peut passer `language` pour la remplacer. */
+const LANGUAGE = tmdbLocale(DEFAULT_LANG);
 
 export type Movie = {
   id: number;
@@ -98,30 +101,38 @@ export async function getGenreMap(): Promise<Record<number, string>> {
 }
 
 /** Non mis en cache : dépend de la saisie utilisateur (le debounce est côté client). */
-export async function searchMovies(query: string): Promise<Movie[]> {
+export async function searchMovies(query: string, lang: Lang = DEFAULT_LANG): Promise<Movie[]> {
   const q = query.trim();
   if (!q) return [];
   const data = await tmdbFetch<Paginated<Movie>>("/search/movie", {
     query: q,
     include_adult: "false",
+    language: tmdbLocale(lang),
   });
   return data.results;
 }
 
 /** Détails + casting (credits) en un seul appel. */
-export async function getMovieDetails(id: number): Promise<MovieDetails> {
+export async function getMovieDetails(id: number, lang: Lang = DEFAULT_LANG): Promise<MovieDetails> {
   "use cache";
   cacheLife("hours");
   return tmdbFetch<MovieDetails>(`/movie/${id}`, {
     append_to_response: "credits",
+    language: tmdbLocale(lang),
   });
 }
 
-/** Vidéos YouTube, en français d'abord puis en anglais si aucune VF n'existe. */
-export async function getMovieVideos(id: number, type: MediaType = "movie"): Promise<MovieVideo[]> {
+/** Vidéos YouTube, dans la langue demandée d'abord puis en anglais si aucune n'existe. */
+export async function getMovieVideos(
+  id: number,
+  type: MediaType = "movie",
+  lang: Lang = DEFAULT_LANG,
+): Promise<MovieVideo[]> {
   "use cache";
   cacheLife("hours");
-  let { results } = await tmdbFetch<Paginated<MovieVideo>>(`/${type}/${id}/videos`);
+  let { results } = await tmdbFetch<Paginated<MovieVideo>>(`/${type}/${id}/videos`, {
+    language: tmdbLocale(lang),
+  });
   if (results.length === 0) {
     ({ results } = await tmdbFetch<Paginated<MovieVideo>>(`/${type}/${id}/videos`, {
       language: "en-US",
@@ -198,6 +209,29 @@ type TvResult = Omit<Movie, "title" | "release_date"> & { name: string; first_ai
 /** Film ou série, ramené à la forme Movie (title / release_date). */
 export type Media = Movie & { type: MediaType };
 
+/** Fiche résumée d'un film ou d'une série à partir de son id (null si TMDB ne la connaît pas). */
+export async function getMediaSummary(
+  type: MediaType,
+  id: number,
+  lang: Lang = DEFAULT_LANG,
+): Promise<Media | null> {
+  "use cache";
+  cacheLife("hours");
+  try {
+    const raw = await tmdbFetch<Movie | TvResult>(`/${type}/${id}`, {
+      language: tmdbLocale(lang),
+    });
+    if ("name" in raw) {
+      const { name, first_air_date, ...rest } = raw;
+      return { ...rest, title: name, release_date: first_air_date, type };
+    }
+    return { ...raw, type };
+  } catch (e) {
+    if (e instanceof TmdbError && e.status === 404) return null;
+    throw e;
+  }
+}
+
 /**
  * Meilleur résultat TMDB pour une liste de titres candidats (français, original…),
  * ou null. Les fiches quasi vides (aucun vote) sont ignorées : ce sont presque
@@ -207,12 +241,13 @@ export async function findMedia(
   type: MediaType,
   titles: string[],
   year?: number,
+  lang: Lang = DEFAULT_LANG,
 ): Promise<Media | null> {
   const yearParam = type === "movie" ? "primary_release_year" : "first_air_date_year";
   for (const title of titles) {
     const q = title.trim();
     if (!q) continue;
-    const params: Record<string, string> = { query: q, include_adult: "false" };
+    const params: Record<string, string> = { query: q, include_adult: "false", language: tmdbLocale(lang) };
     // L'année donnée par le LLM peut être décalée d'un an : on retente sans filtre.
     for (const withYear of year ? [true, false] : [false]) {
       if (withYear) params[yearParam] = String(year);
@@ -241,10 +276,13 @@ type TvDetailsRaw = Omit<MovieDetails, "title" | "release_date" | "runtime"> & {
 export type SeriesDetails = MovieDetails & { seasons: number; episodes: number };
 
 /** Détails d'une série, ramenés à la forme MovieDetails (title / release_date / runtime). */
-export async function getTvDetails(id: number): Promise<SeriesDetails> {
+export async function getTvDetails(id: number, lang: Lang = DEFAULT_LANG): Promise<SeriesDetails> {
   "use cache";
   cacheLife("hours");
-  const raw = await tmdbFetch<TvDetailsRaw>(`/tv/${id}`, { append_to_response: "credits" });
+  const raw = await tmdbFetch<TvDetailsRaw>(`/tv/${id}`, {
+    append_to_response: "credits",
+    language: tmdbLocale(lang),
+  });
   const { name, first_air_date, episode_run_time, number_of_seasons, number_of_episodes, ...rest } = raw;
   return {
     ...rest,

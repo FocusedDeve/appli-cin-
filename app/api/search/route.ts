@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isLang } from "@/lib/i18n";
 import { searchMovies, tmdbImageUrl } from "@/lib/tmdb";
 
 export async function GET(request: NextRequest) {
@@ -7,8 +8,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 
+  const lang = request.nextUrl.searchParams.get("lang");
+
   try {
-    const movies = await searchMovies(q);
+    const movies = await searchMovies(q, isLang(lang) ? lang : undefined);
     return NextResponse.json({
       results: movies.slice(0, 8).map((m) => ({
         id: m.id,
