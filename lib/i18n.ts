@@ -165,6 +165,11 @@ const fr = {
   errNoReplacement: "Aucun remplaçant trouvé pour le moment.",
   errNoAudio: "Aucun son enregistré, réessayez.",
   errAudioTooLong: "L'enregistrement est trop long, réessayez avec une phrase plus courte.",
+  errorTitle: "Noraly n'arrive pas à charger cette page.",
+  errorBody: "Le service de films met trop de temps à répondre. Vérifiez votre connexion puis réessayez.",
+  retry: "Réessayer",
+  errRateLimit: "Doucement ! Noraly a besoin d'une petite pause : réessayez dans une minute.",
+  errBusy: "Noraly est très demandée en ce moment. Réessayez dans une minute.",
   errNothingHeard: "Je n'ai rien entendu, réessayez.",
   errTranscribe: "La transcription a échoué, réessayez dans un instant.",
 };
@@ -313,6 +318,11 @@ const en: Dict = {
   errNoReplacement: "No replacement found for now.",
   errNoAudio: "No sound recorded, please try again.",
   errAudioTooLong: "The recording is too long, try a shorter sentence.",
+  errorTitle: "Noraly can't load this page.",
+  errorBody: "The movie service is taking too long to answer. Check your connection and try again.",
+  retry: "Try again",
+  errRateLimit: "Easy there! Noraly needs a short break: please try again in a minute.",
+  errBusy: "Noraly is very busy right now. Please try again in a minute.",
   errNothingHeard: "I didn't hear anything, please try again.",
   errTranscribe: "Transcription failed, please try again in a moment.",
 };

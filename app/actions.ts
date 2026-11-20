@@ -5,6 +5,7 @@ import { google, type GoogleLanguageModelOptions } from "@ai-sdk/google";
 import { z } from "zod";
 import { DICTS, DEFAULT_LANG, isLang, type Lang } from "@/lib/i18n";
 import { getRegion } from "@/lib/region";
+import { TtlCache, allowRequest, isQuotaError } from "@/lib/server-guard";
 import {
   MODIFIERS,
   isModifier,
@@ -16,6 +17,7 @@ import {
   findMedia,
   getMovieVideos,
   getWatchProviders,
+  noProviders,
   tmdbImageUrl,
   type MediaType,
   type WatchProviders,
@@ -25,6 +27,10 @@ const MAX_PROMPT_LENGTH = 500;
 const MAX_EXCLUDED = 70;
 const MIN_LENGTH = 5;
 const MAX_RECOMMENDATIONS = 15;
+/** Au plus 8 appels à Noraly par minute et par visiteur. */
+const RATE_LIMIT = { limit: 8, windowMs: 60_000 };
+/** Une même demande, refaite dans les 5 minutes, réutilise la réponse sans rappeler Gemini. */
+const resultsCache = new TtlCache<Recommendation[]>(5 * 60_000, 200);
 
 export type Recommendation = {
   id: number;
@@ -189,6 +195,8 @@ async function suggest(
       google: { thinkingConfig: { thinkingLevel: "low" } } satisfies GoogleLanguageModelOptions,
     },
     prompt: userPrompt(request, count, excluded, mods),
+    // Évite qu'une réponse bloquée garde l'interface en attente indéfiniment.
+    abortSignal: AbortSignal.timeout(60_000),
   });
 
   const enriched = await Promise.all(
@@ -197,7 +205,10 @@ async function suggest(
         const type: MediaType = film.type === "serie" ? "tv" : "movie";
         const movie = await findMedia(type, [film.titre_original, film.titre], film.annee, lang);
         if (!movie) return null;
-        const watch = await getWatchProviders(movie.id, type, region);
+        const watch = await getWatchProviders(movie.id, type, region).catch((e) => {
+          console.error("[suggest] plateformes", film.titre, e);
+          return noProviders(region);
+        });
         return {
           id: movie.id,
           type,
@@ -237,14 +248,29 @@ export async function generateRecommendations(
   if (typeof parsed === "string") return { ok: false, error: parsed };
 
   try {
-    const recommendations = await suggest(parsed, MAX_RECOMMENDATIONS, { ...options, lang });
+    // La clé couvre tout ce qui change la réponse : demande, langue, région, contraintes et exclusions.
+    const cacheKey = JSON.stringify([
+      parsed,
+      lang,
+      await getRegion(),
+      [...(options.modifiers ?? [])].sort(),
+      cleanExclude(options.exclude).map((e) => `${e.type}:${e.id}`).sort(),
+    ]);
+    let recommendations = resultsCache.get(cacheKey);
+    if (!recommendations) {
+      if (!(await allowRequest("suggest", RATE_LIMIT.limit, RATE_LIMIT.windowMs))) {
+        return { ok: false, error: t.errRateLimit };
+      }
+      recommendations = await suggest(parsed, MAX_RECOMMENDATIONS, { ...options, lang });
+      if (recommendations.length > 0) resultsCache.set(cacheKey, recommendations);
+    }
     if (recommendations.length === 0) {
       return { ok: false, error: t.errNoResult };
     }
     return { ok: true, recommendations };
   } catch (e) {
     console.error("[generateRecommendations]", e);
-    return { ok: false, error: t.memoryLapse };
+    return { ok: false, error: isQuotaError(e) ? t.errBusy : t.memoryLapse };
   }
 }
 
@@ -259,13 +285,16 @@ export async function replaceRecommendation(
   if (typeof parsed === "string") return { ok: false, error: parsed };
 
   try {
+    if (!(await allowRequest("suggest", RATE_LIMIT.limit, RATE_LIMIT.windowMs))) {
+      return { ok: false, error: t.errRateLimit };
+    }
     // On en demande quelques-uns : certains seront introuvables sur TMDB ou déjà exclus.
     const [recommendation] = await suggest(parsed, 4, { ...options, lang });
     if (!recommendation) return { ok: false, error: t.errNoReplacement };
     return { ok: true, recommendation };
   } catch (e) {
     console.error("[replaceRecommendation]", e);
-    return { ok: false, error: t.memoryLapse };
+    return { ok: false, error: isQuotaError(e) ? t.errBusy : t.memoryLapse };
   }
 }
 

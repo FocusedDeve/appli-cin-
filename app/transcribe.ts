@@ -3,6 +3,7 @@
 import { generateText } from "ai";
 import { google, type GoogleLanguageModelOptions } from "@ai-sdk/google";
 import { DICTS, DEFAULT_LANG, isLang } from "@/lib/i18n";
+import { allowRequest, isQuotaError } from "@/lib/server-guard";
 
 // Le client envoie du WAV 16 kHz mono (≈ 32 Ko/s), 45 s maximum.
 const MAX_AUDIO_BYTES = 2_000_000;
@@ -18,9 +19,12 @@ export async function transcribeAudio(formData: FormData): Promise<Transcription
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: t.errNoAudio };
   }
+  if (file.type && !file.type.startsWith("audio/")) return { ok: false, error: t.errNoAudio };
   if (file.size > MAX_AUDIO_BYTES) {
     return { ok: false, error: t.errAudioTooLong };
   }
+
+  if (!(await allowRequest("transcribe", 6, 60_000))) return { ok: false, error: t.errRateLimit };
 
   try {
     const { text } = await generateText({
@@ -28,6 +32,7 @@ export async function transcribeAudio(formData: FormData): Promise<Transcription
       providerOptions: {
         google: { thinkingConfig: { thinkingLevel: "low" } } satisfies GoogleLanguageModelOptions,
       },
+      abortSignal: AbortSignal.timeout(30_000),
       messages: [
         {
           role: "user",
@@ -50,6 +55,6 @@ export async function transcribeAudio(formData: FormData): Promise<Transcription
     return { ok: true, text: transcript };
   } catch (e) {
     console.error("[transcribeAudio]", e);
-    return { ok: false, error: t.errTranscribe };
+    return { ok: false, error: isQuotaError(e) ? t.errBusy : t.errTranscribe };
   }
 }
