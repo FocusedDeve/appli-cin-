@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Play, X } from "lucide-react";
+import { useT } from "@/lib/use-lang";
 
 export function TrailerButton({ videoKey, title }: { videoKey: string; title: string }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -19,16 +21,16 @@ export function TrailerButton({ videoKey, title }: { videoKey: string; title: st
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 font-medium transition hover:bg-blue-600"
+        className="inline-flex h-11 items-center gap-2 rounded-xl bg-navy px-5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-navy-hover"
       >
-        <Play className="size-5 fill-current" />
-        Bande-annonce
+        <Play className="size-4 fill-current" />
+        {t.trailer}
       </button>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -37,16 +39,17 @@ export function TrailerButton({ videoKey, title }: { videoKey: string; title: st
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label={`Bande-annonce de ${title}`}
-              className="relative aspect-video w-full max-w-4xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl"
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
+              aria-label={t.trailerOf(title)}
+              className="relative aspect-video w-full max-w-4xl overflow-hidden rounded-xl border border-line bg-black"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${videoKey}?autoplay=1&rel=0`}
-                title={`Bande-annonce de ${title}`}
+                title={t.trailerOf(title)}
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen
                 className="size-full"
@@ -54,8 +57,8 @@ export function TrailerButton({ videoKey, title }: { videoKey: string; title: st
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Fermer"
-                className="absolute right-3 top-3 rounded-full bg-black/60 p-2 transition hover:bg-black/80"
+                aria-label={t.close}
+                className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-lg bg-canvas/85 text-ink transition-colors hover:bg-elevated"
               >
                 <X className="size-5" />
               </button>
