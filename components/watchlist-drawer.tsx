@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bookmark, Star, Trash2, X } from "lucide-react";
 import { useWatchlist } from "@/lib/user-data";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 import { useT } from "@/lib/use-lang";
 
 /** Bouton « Ma liste » du header + panneau latéral des œuvres à voir plus tard. */
@@ -13,6 +14,7 @@ export function WatchlistButton() {
   const [open, setOpen] = useState(false);
   const { items, remove } = useWatchlist();
   const t = useT();
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;

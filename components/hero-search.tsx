@@ -78,10 +78,16 @@ export function HeroSearch() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Dernières cartes affichées : « Déjà vu » ne doit pas relire un instantané périmé.
+  const itemsRef = useRef<Recommendation[]>([]);
+
   const loading = state.status === "loading";
   const refreshing = state.status === "success" && state.refreshing;
   const busy = loading || refreshing;
   const results = state.status === "success" ? state.results : null;
+  useEffect(() => {
+    itemsRef.current = results?.items ?? [];
+  });
 
   const valid =
     mode === "solo"
@@ -94,10 +100,20 @@ export function HeroSearch() {
       : { mode, first: first.trim(), second: second.trim() };
   }
 
+  /** Arrête le tirage au sort en cours (timers + état) avant de modifier la grille. */
+  function stopDraw() {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    setSpinning(false);
+    setWinner(null);
+    setHighlight(null);
+  }
+
   /** Nouvelle recherche depuis le formulaire (ou l'historique). */
   async function search(request: SearchRequest) {
     if (busy) return;
     voice.cancel();
+    stopDraw();
     history.add(request);
     setVisible(PAGE_SIZE);
     setHighlight(null);
@@ -121,7 +137,8 @@ export function HeroSearch() {
 
   /** Relance la recommandation avec une nouvelle combinaison de modificateurs d'ambiance. */
   async function refine(modifiers: ModifierId[]) {
-    if (!results || busy) return;
+    if (!results || busy || replacing.length > 0) return;
+    stopDraw();
     const { request, items } = results;
     setState({ status: "success", results, refreshing: true });
     try {
@@ -159,7 +176,8 @@ export function HeroSearch() {
   /** « Déjà vu » : mémorise l'œuvre puis remplace uniquement cette carte. */
   async function markSeen(target: Recommendation) {
     if (!results || replacing.includes(keyOf(target))) return;
-    const { request, items, modifiers } = results;
+    const { request, modifiers } = results;
+    const items = itemsRef.current;
     const targetKey = keyOf(target);
     seen.add(toExcluded(target));
     setReplacing((list) => [...list, targetKey]);
@@ -541,7 +559,7 @@ export function HeroSearch() {
                     key={m.id}
                     type="button"
                     onClick={() => toggleModifier(m.id)}
-                    disabled={busy}
+                    disabled={busy || replacing.length > 0}
                     aria-pressed={active}
                     className={`h-11 rounded-lg border px-4 text-sm transition-colors duration-150 disabled:cursor-not-allowed ${
                       active

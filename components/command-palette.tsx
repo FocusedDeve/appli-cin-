@@ -5,9 +5,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Search } from "lucide-react";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 import { useLang, useT } from "@/lib/use-lang";
 
-type Result = { id: number; title: string; year: string; poster: string | null };
+type Result = { id: number; type: "movie" | "tv"; title: string; year: string; poster: string | null };
 
 const DEBOUNCE_MS = 300;
 
@@ -21,6 +22,7 @@ export function CommandPalette({
   const router = useRouter();
   const lang = useLang();
   const t = useT();
+  useScrollLock(open);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,8 +68,8 @@ export function CommandPalette({
     onClose();
   };
 
-  const go = (id: number) => {
-    router.push(`/movie/${id}`);
+  const go = (result: Result) => {
+    router.push(`/${result.type}/${result.id}`);
     close();
   };
 
@@ -82,7 +84,7 @@ export function CommandPalette({
       e.preventDefault();
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter" && visible[active]) {
-      go(visible[active].id);
+      go(visible[active]);
     }
   };
 
@@ -121,10 +123,10 @@ export function CommandPalette({
 
             <ul className="max-h-[50vh] overflow-y-auto p-2">
               {visible.map((r, i) => (
-                <li key={r.id}>
+                <li key={`${r.type}:${r.id}`}>
                   <button
                     type="button"
-                    onClick={() => go(r.id)}
+                    onClick={() => go(r)}
                     onMouseEnter={() => setActive(i)}
                     className={`flex w-full items-center gap-3 rounded-xl p-2 text-left transition ${
                       i === active ? "bg-elevated" : ""

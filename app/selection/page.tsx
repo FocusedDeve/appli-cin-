@@ -9,7 +9,7 @@ import { DICTS } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
 import { parseItems } from "@/lib/search";
 import { getRegion } from "@/lib/region";
-import { getMediaSummary, getWatchProviders, tmdbImageUrl } from "@/lib/tmdb";
+import { getMediaSummary, getWatchProviders, noProviders, tmdbImageUrl } from "@/lib/tmdb";
 
 function cleanQuery(q: string | string[] | undefined): string {
   const text = Array.isArray(q) ? q[0] : q;
@@ -74,7 +74,7 @@ async function SelectionContent({ searchParams }: { searchParams: PageProps<"/se
             overview: media.overview,
             rating: media.vote_average,
             poster: tmdbImageUrl(media.poster_path, "w500"),
-            watch: await getWatchProviders(media.id, ref.type, region),
+            watch: await getWatchProviders(media.id, ref.type, region).catch(() => noProviders(region)),
           };
         } catch (e) {
           console.error("[selection]", ref, e);

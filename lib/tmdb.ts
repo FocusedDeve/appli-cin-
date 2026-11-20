@@ -70,11 +70,22 @@ async function tmdbFetch<T>(
     url.searchParams.set(key, value);
   }
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
-  });
-  if (!res.ok) {
-    throw new TmdbError(res.status, `TMDB ${res.status} ${res.statusText} (${path})`);
+  // Un TMDB lent ne doit pas bloquer indéfiniment, mais une première connexion peut être longue :
+  // délai généreux, et une seconde tentative sur les erreurs réseau (timeout, connexion coupée).
+  let res: Response | undefined;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
+      break;
+    } catch (e) {
+      if (attempt === 2) throw new TmdbError(504, `TMDB injoignable (${path}) : ${(e as Error).name}`);
+    }
+  }
+  if (!res || !res.ok) {
+    throw new TmdbError(res?.status ?? 504, `TMDB ${res?.status} ${res?.statusText} (${path})`);
   }
   return res.json() as Promise<T>;
 }
@@ -85,31 +96,36 @@ export function tmdbImageUrl(path: string | null, size = "w500"): string | null 
   return `${process.env.TMDB_IMAGE_BASE_URL}/${size}${path}`;
 }
 
-export async function getTrendingMovies(): Promise<Movie[]> {
-  "use cache";
-  cacheLife("hours");
-  const data = await tmdbFetch<Paginated<Movie>>("/trending/movie/day");
-  return data.results;
-}
+/** Film ou série trouvé par la recherche rapide (Ctrl K). */
+export type SearchHit = { id: number; type: MediaType; title: string; year: string; poster_path: string | null };
 
-/** Table id → nom, pour afficher les genres des listes (qui ne contiennent que des genre_ids). */
-export async function getGenreMap(): Promise<Record<number, string>> {
-  "use cache";
-  cacheLife("days");
-  const data = await tmdbFetch<{ genres: Genre[] }>("/genre/movie/list");
-  return Object.fromEntries(data.genres.map((g) => [g.id, g.name]));
-}
+type MultiResult = Partial<Omit<Movie, "title">> & {
+  id: number;
+  media_type: string;
+  title?: string;
+  name?: string;
+  first_air_date?: string;
+};
 
-/** Non mis en cache : dépend de la saisie utilisateur (le debounce est côté client). */
-export async function searchMovies(query: string, lang: Lang = DEFAULT_LANG): Promise<Movie[]> {
+/** Non mis en cache : dépend de la saisie utilisateur (le debounce est côté client). Films et séries. */
+export async function searchMedia(query: string, lang: Lang = DEFAULT_LANG): Promise<SearchHit[]> {
   const q = query.trim();
   if (!q) return [];
-  const data = await tmdbFetch<Paginated<Movie>>("/search/movie", {
+  const data = await tmdbFetch<Paginated<MultiResult>>("/search/multi", {
     query: q,
     include_adult: "false",
     language: tmdbLocale(lang),
   });
-  return data.results;
+  return data.results
+    .filter((r) => r.media_type === "movie" || r.media_type === "tv")
+    .map((r) => ({
+      id: r.id,
+      type: r.media_type as MediaType,
+      title: r.title ?? r.name ?? "",
+      year: (r.release_date ?? r.first_air_date ?? "").slice(0, 4),
+      poster_path: r.poster_path ?? null,
+    }))
+    .filter((r) => r.title);
 }
 
 /** Détails + casting (credits) en un seul appel. */
@@ -162,6 +178,14 @@ export type WatchProviders = {
   /** Autres pays où le titre est en streaming, renseignés si aucune offre dans la région. */
   otherRegions: string[];
 };
+
+/** Sans offre connue : repli quand TMDB ne répond pas, pour ne pas perdre la recommandation. */
+export const noProviders = (region: string): WatchProviders => ({
+  region,
+  link: null,
+  providers: [],
+  otherRegions: [],
+});
 
 type RawProvider = { provider_id: number; provider_name: string; logo_path: string | null };
 type RawRegion = { link?: string } & Partial<

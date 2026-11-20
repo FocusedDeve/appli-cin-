@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isLang } from "@/lib/i18n";
-import { searchMovies, tmdbImageUrl } from "@/lib/tmdb";
+import { searchMedia, tmdbImageUrl } from "@/lib/tmdb";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -11,12 +11,13 @@ export async function GET(request: NextRequest) {
   const lang = request.nextUrl.searchParams.get("lang");
 
   try {
-    const movies = await searchMovies(q, isLang(lang) ? lang : undefined);
+    const hits = await searchMedia(q, isLang(lang) ? lang : undefined);
     return NextResponse.json({
-      results: movies.slice(0, 8).map((m) => ({
+      results: hits.slice(0, 8).map((m) => ({
         id: m.id,
+        type: m.type,
         title: m.title,
-        year: m.release_date?.slice(0, 4) ?? "",
+        year: m.year,
         poster: tmdbImageUrl(m.poster_path, "w92"),
       })),
     });

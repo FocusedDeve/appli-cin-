@@ -3,17 +3,24 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Play, X } from "lucide-react";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 import { useT } from "@/lib/use-lang";
 
 export function TrailerButton({ videoKey, title }: { videoKey: string; title: string }) {
   const [open, setOpen] = useState(false);
   const t = useT();
+  useScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    // Phase de capture : Échap ferme la bande-annonce seule, sans fermer la modale qui la contient.
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [open]);
 
   return (

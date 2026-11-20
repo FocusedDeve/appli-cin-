@@ -9,6 +9,7 @@ import { getTrailerKey, type Recommendation } from "@/app/actions";
 import { TrailerButton } from "@/components/trailer-button";
 import { NoralyAvatar } from "@/components/noraly-avatar";
 import { WatchActions } from "@/components/watch-actions";
+import { useScrollLock } from "@/lib/use-scroll-lock";
 import { useLang, useT } from "@/lib/use-lang";
 
 function LazyTrailer({ recommendation: r }: { recommendation: Recommendation }) {
@@ -44,6 +45,7 @@ export function ChoiceModal({
 }) {
   const detailsHref = `/${r.type}/${r.id}`;
   const t = useT();
+  useScrollLock(true);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => e.key === "Escape" && onClose();

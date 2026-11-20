@@ -15,7 +15,23 @@ const EVENT = "cinehub:storage";
 const EMPTY: never[] = [];
 const cache = new Map<string, { raw: string | null; value: unknown[] }>();
 
-function readList<T>(key: string): T[] {
+const isRef = (v: unknown): v is { id: number; type: MediaType } =>
+  !!v &&
+  typeof v === "object" &&
+  Number.isInteger((v as { id: unknown }).id) &&
+  ((v as { type: unknown }).type === "movie" || (v as { type: unknown }).type === "tv") &&
+  typeof (v as { title: unknown }).title === "string";
+
+const isHistoryEntry = (v: unknown): v is HistoryEntry => {
+  const request = (v as { request?: Partial<Record<string, unknown>> } | null)?.request;
+  if (!request || typeof (v as { at?: unknown }).at !== "number") return false;
+  return request.mode === "duo"
+    ? typeof request.first === "string" && typeof request.second === "string"
+    : request.mode === "solo" && typeof request.prompt === "string";
+};
+
+/** Écarte les entrées invalides d'un stockage altéré (ancienne version, édition manuelle). */
+function readList<T>(key: string, isValid: (v: unknown) => boolean): T[] {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(key);
@@ -28,7 +44,7 @@ function readList<T>(key: string): T[] {
   if (raw) {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (Array.isArray(parsed)) value = parsed;
+      if (Array.isArray(parsed)) value = parsed.filter(isValid);
     } catch {
       // données corrompues : on repart d'une liste vide
     }
@@ -46,15 +62,15 @@ function subscribe(onChange: () => void) {
   };
 }
 
-function useStoredList<T>(key: string, max: number) {
+function useStoredList<T>(key: string, max: number, isValid: (v: unknown) => boolean) {
   const items = useSyncExternalStore(
     subscribe,
-    () => readList<T>(key),
+    () => readList<T>(key, isValid),
     () => EMPTY as T[],
   );
   const update = useCallback(
     (change: (current: T[]) => T[]) => {
-      const next = change(readList<T>(key)).slice(0, max);
+      const next = change(readList<T>(key, isValid)).slice(0, max);
       try {
         localStorage.setItem(key, JSON.stringify(next));
       } catch {
@@ -62,7 +78,7 @@ function useStoredList<T>(key: string, max: number) {
       }
       window.dispatchEvent(new Event(EVENT));
     },
-    [key, max],
+    [key, max, isValid],
   );
   return [items, update] as const;
 }
@@ -79,7 +95,7 @@ export type WatchlistItem = {
 };
 
 export function useWatchlist() {
-  const [items, update] = useStoredList<WatchlistItem>("cinehub_watchlist", 100);
+  const [items, update] = useStoredList<WatchlistItem>("cinehub_watchlist", 100, isRef);
   const has = useCallback(
     (type: MediaType, id: number) => items.some((i) => i.type === type && i.id === id),
     [items],
@@ -103,7 +119,7 @@ export function useWatchlist() {
 /* ---------- Œuvres « déjà vues » ---------- */
 
 export function useSeenItems() {
-  const [items, update] = useStoredList<ExcludedItem>("cinehub_seen_items", 300);
+  const [items, update] = useStoredList<ExcludedItem>("cinehub_seen_items", 300, isRef);
   const add = useCallback(
     (item: ExcludedItem) =>
       update((list) => [item, ...list.filter((i) => !(i.type === item.type && i.id === item.id))]),
@@ -124,7 +140,7 @@ const sameRequest = (a: SearchRequest, b: SearchRequest) =>
     : a.mode === "duo" && b.mode === "duo" && a.first === b.first && a.second === b.second;
 
 export function useHistory() {
-  const [entries, update] = useStoredList<HistoryEntry>("cinehub_history", 5);
+  const [entries, update] = useStoredList<HistoryEntry>("cinehub_history", 5, isHistoryEntry);
   const add = useCallback(
     (request: SearchRequest) =>
       update((list) => {
